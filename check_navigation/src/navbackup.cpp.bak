@@ -1,0 +1,192 @@
+#include <ros/ros.h>
+#include <nav_msgs/GetPlan.h>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <ctime>
+#include <actionlib/client/simple_action_client.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <string>
+using std::string;
+
+double g_GoalTolerance = 0.0;
+std::string g_WorldFrame = "map";
+
+double curX = 22.0; //dummy coordinate. Known to be on the map, all that matters initially.
+double curY = 11.5; //^
+double newX = 0;
+double newY = 0;
+
+
+double highX = 34.0, highY = 20.500, highZ = 3.0;
+double lowX = -7.70, lowY = .25, lowZ = -3.0;
+double rangeX = (highX - lowX) + 1;
+double rangeY = (highY - lowY) + 1;
+double rangeZ = (highZ - lowZ) + 1;
+
+class room{
+  public:
+    double upperX;
+    double upperY;
+    double lowerX;
+    double lowerY;
+};
+
+bool checkCoordinates();
+void generateCoordinates();
+void fillPathRequest(nav_msgs::GetPlan::Request &req);
+bool callPlanningService(ros::ServiceClient &serviceClient, nav_msgs::GetPlan &srv);
+
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+int main(int argc, char** argv)
+{
+    ros::init(argc, argv, "make_plan_node");
+
+    
+    // Init service query for make plan
+
+    /*while (!ros::service::waitForService(service_name, ros::Duration(3.0))) {
+        ROS_INFO("Waiting for service move_base/make_plan to become available");
+    }*/
+    
+    /*if (!serviceClient) {
+        ROS_FATAL("Could not initialize get plan service from %s", serviceClient.getService().c_str());
+        return -1;
+    }
+    */
+
+    /*fillPathRequest(srv.request);
+    if (!serviceClient) {
+        ROS_FATAL("Persistent service connection to %s failed", serviceClient.getService().c_str());
+        return -1;
+    }
+    */
+
+    generateCoordinates();
+}
+bool checkCoordinates(){
+  
+  //MoveBaseClient ac("move", false);
+  ros::NodeHandle nh;
+  string service_name = "move_base/make_plan";
+  ros::ServiceClient serviceClient = nh.serviceClient<nav_msgs::GetPlan>(service_name, false);
+  nav_msgs::GetPlan srv;
+  fillPathRequest(srv.request); //fills out coordinates in service via global variables
+  if(!callPlanningService(serviceClient, srv)){
+    ROS_INFO("Coordinates were shit.");
+    return false;
+  }
+  else
+    ROS_INFO("Coordinates worked.");
+  return true;
+}
+void generateCoordinates(){
+  int total = 0;
+  int passed = 0;
+  //defining room coordinates
+  room frontCorridors;
+  room corridor3;
+  room corridor4;
+  room hall1;
+  room hall2;
+  room backHall;
+  //room frontHall;
+  room kitchen;
+  //room dining;
+  room mainLab;
+
+  frontCorridors.upperX = 1.624; 	frontCorridors.upperY = 20.474; 	frontCorridors.lowerX = -2.266; 	frontCorridors.lowerY = 3.128;
+  corridor3.upperX = 25.770;		corridor3.upperY = 20.410; 		corridor3.lowerX = 20.20; 		corridor3.lowerY = 16.006;
+  corridor4.upperX = 33.777; 		corridor4.upperY = 7.646; 		corridor4.lowerX = 29.022; 		corridor4.lowerY = 3.063;
+  hall1.upperX = 33.669; 		hall1.upperY = 15.693; 			hall1.lowerX = -7.009; 			hall1.lowerY = 15.03;
+  hall2.upperX = 33.611; 		hall2.upperY = 8.512; 			hall2.lowerX = -6.828; 			hall2.lowerY = 7.950;
+  kitchen.upperX = 18.414; 		kitchen.upperY = 8.745; 		kitchen.lowerX = 16.252; 		kitchen.lowerY = 2.573;
+  //hall1.upperX = ;			hall1.upperY = ; 			hall1.lowerX = ; 			hall1.lowerY = ;
+  mainLab.upperX = 24.302;		mainLab.upperY = 13.341; 		mainLab.lowerX = 19.201; 		mainLab.lowerY = 9.880;
+  room holder [6] = {frontCorridors, corridor3, corridor4, hall1, hall2, kitchen};
+  //room holder [1] = {mainLab};
+  ros::Time::init();
+  srand(time(NULL));
+  ros::Duration dur(180); //18000 = 5 hours
+  ros::Time start = ros::Time::now();
+
+  ros::NodeHandle nh;
+  MoveBaseClient ac("move_base", true);
+  ROS_INFO("Beginning coordinate generation...");
+  while(ros::Time::now() - start < dur){
+      bool valid = false;
+      double x, randomX, randomY, randomZ = 0;
+      while(!valid){
+
+        //random coordinate generation
+        randomX = lowX + double(rangeX*rand()/(RAND_MAX + 1.0));
+        randomY = lowY + double(rangeY*rand()/(RAND_MAX + 1.0));
+        randomZ = lowZ + double(rangeZ*rand()/(RAND_MAX + 1.0));
+	newX = randomX;
+	newY = randomY;
+
+        for(int i = 0; i < 6; i++){
+          room cur = holder[i];
+          if(newX <= cur.upperX && newX >= cur.lowerX && newY <= cur.upperY && newY >= cur.lowerY && checkCoordinates())
+             valid = true;
+        }
+        
+      }
+      std::stringstream ss;
+      ss << "coordinates: [x =" << randomX << "][y = " << randomY << "][z = " << randomZ << "]";
+      ROS_INFO_STREAM("coordinates: [x =" << randomX << "][y = " << randomY << "][z = " << randomZ << "]");
+      move_base_msgs::MoveBaseGoal goal;
+      goal.target_pose.header.stamp = ros::Time::now();
+      goal.target_pose.header.frame_id = "map";
+      goal.target_pose.pose.position.x = newX;
+      goal.target_pose.pose.position.y = newY;
+      goal.target_pose.pose.orientation.z = sin(0 / 2.);
+      goal.target_pose.pose.orientation.w = cos(0 / 2.);
+      ac.sendGoal(goal);
+      ROS_INFO("Sent goal.");
+      total++;
+      ac.waitForResult(ros::Duration(300.0));
+      if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+        ROS_INFO("Goal reached successfully.");
+        passed++;
+      }
+      int failed = total - passed;
+      ROS_INFO("Current score:");
+      ROS_INFO("Passed: %d", passed);
+      ROS_INFO("Failed: %d", failed);
+      curX = newX;
+      curY = newY;
+      newX = 0;
+      newY = 0;
+   } 
+}
+void fillPathRequest(nav_msgs::GetPlan::Request &request)
+{
+    request.start.header.frame_id = g_WorldFrame;
+    request.start.pose.position.x = curX;
+    request.start.pose.position.y = curY;
+    request.start.pose.orientation.w = 1.0;
+
+    request.goal.header.frame_id = g_WorldFrame;
+    request.goal.pose.position.x = curX;
+    request.goal.pose.position.y = curY;
+    request.goal.pose.orientation.w = 1.0;
+
+    request.tolerance = g_GoalTolerance;
+}
+
+bool callPlanningService(ros::ServiceClient &serviceClient, nav_msgs::GetPlan &srv)
+{
+     // Perform the actual path planner call
+    if (serviceClient.call(srv)) {
+        if (!srv.response.plan.poses.empty()) {
+            return true;
+        }
+        else {
+            ROS_WARN("Got empty plan. Choosing new coordinates...");
+        }
+    }
+    else {
+        ROS_ERROR("Failed to call service %s - is the robot moving?", serviceClient.getService().c_str());
+	//ros::Duration(5.0).sleep();
+    }
+return false;
+}

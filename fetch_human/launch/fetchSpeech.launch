@@ -1,0 +1,8 @@
+<launch>
+ 
+  <node name="recognizer" pkg="pocketsphinx" type="recognizer.py" output="screen">
+    <param name="lm" value="$(find fetch_human)/config/2185.lm"/>
+    <param name="dict" value="$(find fetch_human)/config/2185.dic"/>
+  </node>
+ 
+</launch>

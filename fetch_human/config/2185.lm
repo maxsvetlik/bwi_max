@@ -1,0 +1,58 @@
+Language model created by QuickLM on Tue Aug 26 00:15:46 EDT 2014
+Copyright (c) 1996-2010 Carnegie Mellon University and Alexander I. Rudnicky
+
+The model is in standard ARPA format, designed by Doug Paul while he was at MITRE.
+
+The code that was used to produce this language model is available in Open Source.
+Please visit http://www.speech.cs.cmu.edu/tools/ for more information
+
+The (fixed) discount mass is 0.5. The backoffs are computed using the ratio method.
+This model based on a corpus of 7 sentences and 10 words
+
+\data\
+ngram 1=10
+ngram 2=15
+ngram 3=10
+
+\1-grams:
+-0.8539 </s> -0.3010
+-0.8539 <s> -0.2355
+-1.3979 AM -0.2148
+-1.3979 I -0.2833
+-1.6990 I'M -0.2833
+-1.6990 NO -0.2355
+-1.6990 NOPE -0.2355
+-1.3979 NOT -0.2355
+-1.6990 YEAH -0.2355
+-1.6990 YES -0.2355
+
+\2-grams:
+-0.8451 <s> I 0.0000
+-1.1461 <s> I'M 0.0000
+-1.1461 <s> NO 0.0000
+-1.1461 <s> NOPE 0.0000
+-1.1461 <s> YEAH 0.0000
+-1.1461 <s> YES 0.0000
+-0.6021 AM </s> -0.3010
+-0.6021 AM NOT 0.0000
+-0.3010 I AM 0.0000
+-0.3010 I'M NOT 0.0000
+-0.3010 NO </s> -0.3010
+-0.3010 NOPE </s> -0.3010
+-0.3010 NOT </s> -0.3010
+-0.3010 YEAH </s> -0.3010
+-0.3010 YES </s> -0.3010
+
+\3-grams:
+-0.3010 <s> I AM
+-0.3010 <s> I'M NOT
+-0.3010 <s> NO </s>
+-0.3010 <s> NOPE </s>
+-0.3010 <s> YEAH </s>
+-0.3010 <s> YES </s>
+-0.3010 AM NOT </s>
+-0.6021 I AM </s>
+-0.6021 I AM NOT
+-0.3010 I'M NOT </s>
+
+\end\

@@ -1,0 +1,8 @@
+#goal
+string cmd
+---
+#result
+bool res
+---
+#feedback - maybe change to a poseStamped pose
+string fb
